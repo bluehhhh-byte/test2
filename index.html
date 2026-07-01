@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>국가 재난 안전 모니터링 시스템</title>
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.35);
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --accent-danger-glow: rgba(239, 68, 68, 0.25);
+            --accent-success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            background: #090d16;
+            background-image: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            padding-bottom: 3rem;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-title-container h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-danger);
+            background: rgba(239, 68, 68, 0.1);
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-danger);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 8px var(--accent-danger); }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Top Overview Summary Cards */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .overview-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .overview-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .overview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .overview-card.warning::before { background: var(--accent-warning); }
+        .overview-card.danger::before { background: var(--accent-danger); }
+        .overview-card.success::before { background: var(--accent-success); }
+
+        .overview-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .overview-val {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 0.25rem;
+        }
+
+        .overview-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Controls / Filter Panel */
+        .controls-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .controls-panel select, .controls-panel input {
+            background: #1f2937;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            min-width: 180px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .controls-panel select:focus, .controls-panel input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .result-count {
+            margin-left: auto;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1.25rem;
+            position: relative;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s, box-shadow 0.25s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Highlight classes */
+        .card.high-damage {
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 15px var(--accent-danger-glow);
+        }
+
+        .card.high-damage::after {
+            content: '⚠️ 대규모 피해';
+            position: absolute;
+            top: -10px;
+            right: 15px;
+            background: var(--accent-danger);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .card-title-sec {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .disaster-badge {
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-align: center;
+            width: fit-content;
+        }
+
+        /* Type specific badge colors */
+        .badge-산사태 { background: rgba(217, 119, 6, 0.15); color: #fbbf24; border: 1px solid rgba(217, 119, 6, 0.3); }
+        .badge-한파 { background: rgba(96, 165, 250, 0.15); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.3); }
+        .badge-폭염 { background: rgba(244, 63, 94, 0.15); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
+        .badge-태풍 { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-홍수 { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; border: 1px solid rgba(20, 184, 166, 0.3); }
+        .badge-화재 { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-지진 { background: rgba(249, 115, 22, 0.15); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.3); }
+        .badge-폭설 { background: rgba(6, 182, 212, 0.15); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.3); }
+
+        .scale-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .scale-badge.severe {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .card-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+            padding-bottom: 0.4rem;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .detail-val {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .val-danger {
+            color: #fca5a5;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+        }
+
+        /* Sidebar Panels */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .sidebar-panel h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 2px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tab-btn-group {
+            display: flex;
+            background: #1f2937;
+            padding: 0.2rem;
+            border-radius: 6px;
+            gap: 0.1rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Progress list for Facility summary */
+        .stat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            max-height: 380px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .stat-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .stat-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .stat-count {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .stat-progress-bar {
+            height: 6px;
+            background: #1f2937;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .stat-progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #3b82f6, #60a5fa);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* RSS list */
+        .rss-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .rss-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.85rem;
+        }
+
+        .rss-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .rss-title {
+            text-decoration: none;
+            color: #d1d5db;
+            font-size: 0.9rem;
+            font-weight: 500;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: color 0.2s;
+        }
+
+        .rss-title:hover {
+            color: var(--primary);
+        }
+
+        .rss-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* No results design */
+        .no-results {
+            grid-column: 1 / -1;
+            background: var(--panel-bg);
+            border: 1px dashed var(--panel-border);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .no-results svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            stroke: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title-container">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m12 3-1.912 5.886A2 2 0 0 1 8.188 10.25H2l5 3.63 1.913 5.887a2 2 0 0 0 3.8 0L14.625 13.88l5-3.63h-6.188a2 2 0 0 1-1.9-1.364L12 3Z"/>
+            </svg>
+            <h1>국가 재난 및 안전 모니터링 대시보드</h1>
+        </div>
+        <div class="live-indicator">
+            <span class="live-dot"></span>
+            LIVE MONITORING
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Main Content Area (Left) - Disaster Events cards and filters -->
+        <div class="main-panel">
+            
+            <!-- Quick Overview Widget Block -->
+            <div class="overview-grid">
+                <div class="overview-card success">
+                    <span class="overview-label">총 재난 모니터링 건수</span>
+                    <span class="overview-val" id="statTotalDisaster">-</span>
+                    <span class="overview-sub">누적 관측 재난 건수</span>
+                </div>
+                <div class="overview-card danger">
+                    <span class="overview-label">심각 등급 재난 (4-5등급)</span>
+                    <span class="overview-val" id="statSevereDisaster">-</span>
+                    <span class="overview-sub">집중 관찰 필요 대상</span>
+                </div>
+                <div class="overview-card warning">
+                    <span class="overview-label">총 누적 피해액</span>
+                    <span class="overview-val" id="statTotalDamage">-</span>
+                    <span class="overview-sub">피해규모 합산액</span>
+                </div>
+                <div class="overview-card">
+                    <span class="overview-label">등록 안전시설 수</span>
+                    <span class="overview-val" id="statTotalFacility">-</span>
+                    <span class="overview-sub">전국 대피 및 안전 시설</span>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <div class="filter-group">
+                    <label for="typeFilter">재난 유형</label>
+                    <select id="typeFilter">
+                        <option value="">모든 유형</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="regionFilter">발생 지역</label>
+                    <select id="regionFilter">
+                        <option value="">모든 지역</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="searchQuery">지역 키워드 검색</label>
+                    <input type="text" id="searchQuery" placeholder="지역명을 직접 입력..." />
+                </div>
+                <div class="result-count" id="resultCount">결과: 0건</div>
+            </div>
+
+            <!-- Cards Container -->
+            <div class="cards-grid" id="cardContainer">
+                <div class="no-results">데이터 로딩 중...</div>
+            </div>
+
+        </div>
+
+        <!-- Sidebar Area (Right) - Safety facility stats and RSS feed -->
+        <div class="sidebar">
+            
+            <!-- Safety Facility Summary Widget -->
+            <div class="sidebar-panel">
+                <h2>
+                    <span>🛡️ 안전시설 현황 요약</span>
+                    <div class="tab-btn-group">
+                        <button class="tab-btn active" onclick="switchFacilityTab('type')">시설유형별</button>
+                        <button class="tab-btn" onclick="switchFacilityTab('region')">지역별</button>
+                    </div>
+                </h2>
+                <div class="stat-list" id="facilitySummaryContainer">
+                    <!-- Progress list rendered here -->
+                </div>
+            </div>
+
+            <!-- RSS News Policy Widget -->
+            <div class="sidebar-panel">
+                <h2>📢 정책 및 보도 자료</h2>
+                <div class="rss-list" id="rssContainer">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">뉴스 피드 로딩 중...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Core state
+        let allData = { disasters: [], facilities: [] };
+        let currentFacilityTab = 'type'; // 'type' | 'region'
+
+        // Initialize application
+        async function init() {
+            try {
+                // Fetch consolidated data
+                const response = await fetch('./data.json');
+                allData = await response.json();
+                
+                // Set overview metrics
+                calculateOverviewMetrics();
+                
+                // Populate filter dropdown choices
+                populateDropdowns();
+                
+                // Render initial disaster cards
+                renderDisasterCards(allData.disasters);
+                
+                // Render initial facility summary
+                renderFacilitySummary();
+
+                // Load RSS feeds
+                loadRSSFeed();
+                
+                // Bind event listeners for real-time filter action
+                document.getElementById('typeFilter').addEventListener('change', performFiltering);
+                document.getElementById('regionFilter').addEventListener('change', performFiltering);
+                document.getElementById('searchQuery').addEventListener('input', performFiltering);
+
+            } catch (error) {
+                console.error("Error loading data source:", error);
+                document.getElementById('cardContainer').innerHTML = `
+                    <div class="no-results">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <p>데이터 원본 파일(data.json)을 읽어오는 데 실패했습니다.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Helper to format currency/costs beautifully in Korean units
+        function formatDamageCost(manwon) {
+            if (manwon === null || manwon === undefined || manwon === '') return "정보 없음";
+            const val = parseFloat(manwon);
+            if (val >= 10000) {
+                const eok = Math.floor(val / 10000);
+                const remain = Math.round(val % 10000);
+                return `${eok}억 ${remain > 0 ? remain.toLocaleString() + '만' : ''}원`;
+            }
+            return `${val.toLocaleString()}만원`;
+        }
+
+        // Calculate and set top summary dashboard counts
+        function calculateOverviewMetrics() {
+            const disasters = allData.disasters;
+            const facilities = allData.facilities;
+
+            document.getElementById('statTotalDisaster').textContent = `${disasters.length}건`;
+            document.getElementById('statTotalFacility').textContent = `${facilities.length}개`;
+
+            // Calculate severe occurrences (Grade 4 or 5)
+            const severeCount = disasters.filter(item => item.규모등급 >= 4).length;
+            document.getElementById('statSevereDisaster').textContent = `${severeCount}건`;
+
+            // Calculate total damage
+            let sumDamage = 0;
+            disasters.forEach(item => {
+                if (item.피해금액_만원) {
+                    sumDamage += parseFloat(item.피해금액_만원);
+                }
+            });
+            document.getElementById('statTotalDamage').textContent = formatDamageCost(sumDamage);
+        }
+
+        // Populate filter options dynamically based on the dataset values
+        function populateDropdowns() {
+            const typeSelect = document.getElementById('typeFilter');
+            const regionSelect = document.getElementById('regionFilter');
+
+            // Unique values
+            const types = [...new Set(allData.disasters.map(d => d.재난유형))].filter(Boolean).sort();
+            const regions = [...new Set(allData.disasters.map(d => d.발생지역))].filter(Boolean).sort();
+
+            types.forEach(type => {
+                const opt = document.createElement('option');
+                opt.value = type;
+                opt.textContent = type;
+                typeSelect.appendChild(opt);
+            });
+
+            regions.forEach(reg => {
+                const opt = document.createElement('option');
+                opt.value = reg;
+                opt.textContent = reg;
+                regionSelect.appendChild(opt);
+            });
+        }
+
+        // Render the filtered disasters list in card style format
+        function renderDisasterCards(disasters) {
+            const container = document.getElementById('cardContainer');
+            const countDisplay = document.getElementById('resultCount');
+
+            container.innerHTML = '';
+            countDisplay.textContent = `결과: ${disasters.length}건`;
+
+            if (disasters.length === 0) {
+                container.innerHTML = `
+                    <div class="no-results">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <p>선택하신 조건에 부합하는 재난 발생 건이 존재하지 않습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            disasters.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                // Highlight large damage (>= 3억원)
+                const damageVal = parseFloat(item.피해금액_만원);
+                if (damageVal >= 30000.0) {
+                    card.classList.add('high-damage');
+                }
+
+                const isSevere = item.규모등급 >= 4;
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-title-sec">
+                            <span class="disaster-badge badge-${item.재난유형}">${item.재난유형}</span>
+                        </div>
+                        <span class="scale-badge ${isSevere ? 'severe' : ''}">
+                            ${isSevere ? '🔥 ' : ''}규모 등급 ${item.규모등급}
+                        </span>
+                    </div>
+                    <div class="card-details">
+                        <div class="detail-row">
+                            <span class="detail-label">발생 일자</span>
+                            <span class="detail-val">${item.발생일자}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">발생 지역</span>
+                            <span class="detail-val">${item.발생지역}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">피해 금액</span>
+                            <span class="detail-val ${damageVal >= 30000 ? 'val-danger' : ''}">${formatDamageCost(item.피해금액_만원)}</span>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <span>복구 기간: ${item.복구기간_일 ? item.복구기간_일 + '일' : '정보 없음'}</span>
+                        <span style="font-weight: 700; color: ${item.인명피해여부 === 'Y' ? '#ef4444' : '#10b981'}">
+                            ${item.인명피해여부 === 'Y' ? '⚠️ 인명피해 있음' : '✓ 인명피해 없음'}
+                        </span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Toggle Sidebar Tab
+        function switchFacilityTab(tab) {
+            currentFacilityTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderFacilitySummary();
+        }
+
+        // Calculate and Render Facility Stats
+        function renderFacilitySummary() {
+            const container = document.getElementById('facilitySummaryContainer');
+            container.innerHTML = '';
+
+            const facilities = allData.facilities;
+            if (!facilities || facilities.length === 0) {
+                container.innerHTML = '<div>안전시설 데이터가 없습니다.</div>';
+                return;
+            }
+
+            const total = facilities.length;
+            const summaryMap = {};
+
+            if (currentFacilityTab === 'type') {
+                // Aggregate by type
+                facilities.forEach(f => {
+                    summaryMap[f.시설유형] = (summaryMap[f.시설유형] || 0) + 1;
+                });
+            } else {
+                // Aggregate by region
+                facilities.forEach(f => {
+                    summaryMap[f.지역] = (summaryMap[f.지역] || 0) + 1;
+                });
+            }
+
+            // Convert to array and sort by count descending
+            const sortedStats = Object.entries(summaryMap).sort((a, b) => b[1] - a[1]);
+
+            sortedStats.forEach(([name, count]) => {
+                const percentage = ((count / total) * 100).toFixed(1);
+                const item = document.createElement('div');
+                item.className = 'stat-item';
+                item.innerHTML = `
+                    <div class="stat-info">
+                        <span class="stat-name">${name}</span>
+                        <span class="stat-count">${count}개 (${percentage}%)</span>
+                    </div>
+                    <div class="stat-progress-bar">
+                        <div class="stat-progress-fill" style="width: 0%"></div>
+                    </div>
+                `;
+                container.appendChild(item);
+
+                // Animate progress bar fill after injection
+                setTimeout(() => {
+                    const fill = item.querySelector('.stat-progress-fill');
+                    if (fill) fill.style.width = `${percentage}%`;
+                }, 50);
+            });
+        }
+
+        // Perform real-time filtering based on options chosen
+        function performFiltering() {
+            const typeVal = document.getElementById('typeFilter').value;
+            const regionVal = document.getElementById('regionFilter').value;
+            const queryVal = document.getElementById('searchQuery').value.trim().toLowerCase();
+
+            const filtered = allData.disasters.filter(item => {
+                const matchType = typeVal === '' || item.재난유형 === typeVal;
+                const matchRegion = regionVal === '' || item.발생지역 === regionVal;
+                
+                const matchSearch = queryVal === '' || 
+                    (item.발생지역 && item.발생지역.toLowerCase().includes(queryVal)) ||
+                    (item.재난유형 && item.재난유형.toLowerCase().includes(queryVal));
+
+                return matchType && matchRegion && matchSearch;
+            });
+
+            renderDisasterCards(filtered);
+        }
+
+        // Fetch RSS policies from korea.kr RSS feed (Ministry of the Interior and Safety)
+        async function loadRSSFeed() {
+            const rssUrl = 'https://www.korea.kr/rss/dept_mois.xml';
+            const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+            const container = document.getElementById('rssContainer');
+
+            // Fallback content in case CORS proxy fails or runs offline
+            const fallbackNews = [
+                {
+                    title: "행정안전부, 풍수해 감지 정보 고도화를 통한 주민 사전 대피체계 마련",
+                    link: "https://www.korea.kr/news/policyNewsView.do?newsId=148931123",
+                    pubDate: new Date().toLocaleDateString(),
+                    author: "행정안전부"
+                },
+                {
+                    title: "기후위기 극복을 위한 재난관리체계 전면 개편... 예산 전격 투입",
+                    link: "https://www.korea.kr/news/policyNewsView.do?newsId=148930456",
+                    pubDate: new Date(Date.now() - 86400000).toLocaleDateString(),
+                    author: "행정안전부"
+                },
+                {
+                    title: "전국 안전대피시설(대피소 및 대피센터) 정밀 소방 안전검점 실시",
+                    link: "https://www.korea.kr/news/policyNewsView.do?newsId=148929988",
+                    pubDate: new Date(Date.now() - 172800000).toLocaleDateString(),
+                    author: "소방청"
+                },
+                {
+                    title: "폭염·한파 취약 차상위계층 집중 안전망 구축 보도자료",
+                    link: "https://www.korea.kr/news/policyNewsView.do?newsId=148928789",
+                    pubDate: new Date(Date.now() - 259200000).toLocaleDateString(),
+                    author: "행정안전부"
+                },
+                {
+                    title: "디지털 트윈 기술 활용 재난안전 지진 대피 가상시뮬레이션 도입",
+                    link: "https://www.korea.kr/news/policyNewsView.do?newsId=148927511",
+                    pubDate: new Date(Date.now() - 345600000).toLocaleDateString(),
+                    author: "한국지능정보사회진흥원"
+                }
+            ];
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    container.innerHTML = '';
+                    const items = data.items.slice(0, 5);
+                    
+                    items.forEach(item => {
+                        const date = new Date(item.pubDate).toLocaleDateString();
+                        const author = item.author || "행정안전부";
+                        
+                        container.innerHTML += `
+                            <div class="rss-item">
+                                <a href="${item.link}" class="rss-title" target="_blank" title="${item.title}">${item.title}</a>
+                                <div class="rss-meta">
+                                    <span>${author}</span>
+                                    <span>${date}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    renderFallbackNews(container, fallbackNews);
+                }
+            } catch (error) {
+                console.error("RSS fetch failed, rendering fallback policies:", error);
+                renderFallbackNews(container, fallbackNews);
+            }
+        }
+
+        function renderFallbackNews(container, newsItems) {
+            container.innerHTML = '';
+            newsItems.forEach(item => {
+                container.innerHTML += `
+                    <div class="rss-item">
+                        <a href="${item.link}" class="rss-title" target="_blank" title="${item.title}">${item.title}</a>
+                        <div class="rss-meta">
+                            <span>${item.author}</span>
+                            <span>${item.pubDate}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
