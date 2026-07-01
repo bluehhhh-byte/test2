@@ -14,23 +14,40 @@
     <header class="hero">
       <div>
         <p class="eyebrow">재난 발생 현황 · 안전시설 현황</p>
-        <h1>시민이 한눈에, 재난·안전 검색 플랫폼</h1>
-        <p class="lead">재난 발생 카드, 지역·유형별 안전시설 요약, 필터 검색, 최신 RSS 요약을 한 화면에 모았습니다.</p>
-        <section class="rss-hero panel" aria-label="RSS 요약">
-          <div class="section-head">
+        <h1><span>시민이 한눈에</span><span>재난·안전 검색 플랫폼</span></h1>
+        <div class="quick-tags" aria-label="주요 기능">
+          <span>재난 카드</span>
+          <span>시설 요약</span>
+          <span>필터 검색</span>
+          <span>실시간 기사</span>
+        </div>
+        <section class="rss-hero panel" aria-label="재난 안전 관련 실시간 기사">
+          <div class="section-head rss-headline">
             <div>
-              <h2>최신 korea.kr RSS 요약</h2>
-              <p>전체 선택 상태에서도 상단에서 바로 최신 항목을 확인합니다.</p>
+              <h2>재난 안전 관련 실시간 기사</h2>
+              <p>korea.kr 최신 소식을 바로 확인합니다.</p>
             </div>
-            <div class="chip" id="rssHeroStatus">불러오는 중</div>
+            <div class="chip live-chip" id="rssHeroStatus">불러오는 중</div>
           </div>
           <ul id="rssHeroList" class="rss-hero-list"></ul>
         </section>
       </div>
-      <div class="hero-metrics compact">
-        <div class="metric metric-primary"><span>재난사건</span><strong id="totalReports">0</strong></div>
-        <div class="metric"><span>안전시설</span><strong id="totalFacilities">0</strong></div>
-        <div class="metric metric-accent"><span>표시결과</span><strong id="resultCount">0건</strong></div>
+      <div class="hero-metrics compact" aria-label="필터 반응 요약">
+        <div class="metric metric-primary">
+          <span>재난사건</span>
+          <strong id="totalReports">0</strong>
+          <div class="meter"><i id="reportMeter"></i></div>
+        </div>
+        <div class="metric">
+          <span>안전시설</span>
+          <strong id="totalFacilities">0</strong>
+          <div class="meter"><i id="facilityMeter"></i></div>
+        </div>
+        <div class="metric metric-accent">
+          <span>표시결과</span>
+          <strong id="resultCount">0건</strong>
+          <div class="meter"><i id="visibleMeter"></i></div>
+        </div>
       </div>
     </header>
 
@@ -58,6 +75,9 @@
           <div class="chip" id="summaryChip">전체 0건</div>
         </div>
         <div id="cards" class="cards"></div>
+        <div class="load-more-wrap">
+          <button id="loadMoreButton" class="load-more" type="button">계속보기</button>
+        </div>
       </section>
 
       <aside class="side-column">
@@ -95,4 +115,3 @@
   <script src="./app.js"></script>
 </body>
 </html>
-

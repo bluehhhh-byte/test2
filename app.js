@@ -2,7 +2,8 @@
 const nf = new Intl.NumberFormat('ko-KR');
 const data = window.__DATA__ || { disasters: [], facilities: [] };
 const rssFeedUrl = 'https://www.korea.kr/rss/dept_mois.xml';
-const state = { type: '', region: '', summary: 'region' };
+const PAGE_SIZE = 50;
+const state = { type: '', region: '', summary: 'region', visible: PAGE_SIZE };
 
 function fmt(v) {
   if (v === null || v === undefined || v === '') return '-';
@@ -45,15 +46,40 @@ function filteredDisasters() {
   return data.disasters.filter((d) => (!state.type || d['재난유형'] === state.type) && (!state.region || d['발생지역'] === state.region));
 }
 
+function filteredFacilities() {
+  return data.facilities.filter((f) => !state.region || f['지역'] === state.region);
+}
+
+function meterWidth(count, total) {
+  if (!total) return '0%';
+  return `${Math.max(3, Math.min(100, (count / total) * 100))}%`;
+}
+
+function renderMetrics(rows, visibleRows) {
+  const facilities = filteredFacilities();
+  el('totalReports').textContent = fmt(rows.length);
+  el('totalFacilities').textContent = fmt(facilities.length);
+  el('resultCount').textContent = `${fmt(visibleRows.length)}건`;
+  el('reportMeter').style.width = meterWidth(rows.length, data.disasters.length);
+  el('facilityMeter').style.width = meterWidth(facilities.length, data.facilities.length);
+  el('visibleMeter').style.width = meterWidth(visibleRows.length, Math.max(rows.length, 1));
+}
+
 function renderDisasters() {
   const rows = filteredDisasters();
-  el('cards').innerHTML = rows.map(card).join('') || '<div class="muted">조건에 맞는 재난 사건이 없습니다.</div>';
-  el('resultCount').textContent = `${rows.length}건`;
-  el('summaryChip').textContent = `전체 ${rows.length}건`;
+  const visibleRows = rows.slice(0, state.visible);
+  el('cards').innerHTML = visibleRows.map(card).join('') || '<div class="muted">조건에 맞는 재난 사건이 없습니다.</div>';
+  el('summaryChip').textContent = `${fmt(visibleRows.length)} / ${fmt(rows.length)}건 표시`;
+  renderMetrics(rows, visibleRows);
+
+  const loadMore = el('loadMoreButton');
+  const remaining = rows.length - visibleRows.length;
+  loadMore.hidden = remaining <= 0;
+  loadMore.textContent = remaining > 0 ? `계속보기 (${fmt(remaining)}건 남음)` : '계속보기';
 }
 
 function renderFacilitySummary() {
-  const rows = data.facilities || [];
+  const rows = filteredFacilities();
   const key = state.summary === 'facility' ? '시설유형' : '지역';
   const map = new Map();
   rows.forEach((row) => {
@@ -69,12 +95,7 @@ function renderFacilitySummary() {
       <strong>${name}</strong>
       <span>${v.count}개 시설 · 수용인원 합계 ${fmt(v.capacity)}명</span>
     </div>
-  `).join('');
-}
-
-function renderTotals() {
-  el('totalReports').textContent = fmt(data.disasters.length);
-  el('totalFacilities').textContent = fmt(data.facilities.length);
+  `).join('') || '<div class="muted">선택한 지역의 안전시설 정보가 없습니다.</div>';
 }
 
 function renderRss(items, statusText) {
@@ -88,7 +109,7 @@ async function loadRss() {
   try {
     if (Array.isArray(window.__RSS_ITEMS__) && window.__RSS_ITEMS__.length >= 5) {
       const items = window.__RSS_ITEMS__.slice(0, 5);
-      renderRss(items, `최신 ${items.length}건`);
+      renderRss(items, `실시간 ${items.length}건`);
       return;
     }
     const res = await fetch(rssFeedUrl);
@@ -100,27 +121,41 @@ async function loadRss() {
       date: item.querySelector('pubDate')?.textContent || '',
       desc: (item.querySelector('description')?.textContent || '').replace(/<[^>]+>/g, '')
     }));
-    renderRss(items, `최신 ${items.length}건`);
+    renderRss(items, `실시간 ${items.length}건`);
   } catch (err) {
     const items = (window.__RSS_ITEMS__ || []).slice(0, 5);
-    renderRss(items, 'RSS 보조 목록 표시');
+    renderRss(items, '보조 목록 표시');
   }
+}
+
+function resetVisible() {
+  state.visible = PAGE_SIZE;
 }
 
 function bindEvents() {
   el('typeFilter').addEventListener('change', (e) => {
     state.type = e.target.value;
+    resetVisible();
     renderDisasters();
+    renderFacilitySummary();
   });
   el('regionFilter').addEventListener('change', (e) => {
     state.region = e.target.value;
+    resetVisible();
     renderDisasters();
+    renderFacilitySummary();
   });
   el('resetButton').addEventListener('click', () => {
     state.type = '';
     state.region = '';
+    resetVisible();
     el('typeFilter').value = '';
     el('regionFilter').value = '';
+    renderDisasters();
+    renderFacilitySummary();
+  });
+  el('loadMoreButton').addEventListener('click', () => {
+    state.visible += PAGE_SIZE;
     renderDisasters();
   });
   document.querySelectorAll('.toggle').forEach((btn) => {
@@ -134,7 +169,6 @@ function bindEvents() {
 }
 
 async function boot() {
-  renderTotals();
   renderFilters();
   renderDisasters();
   renderFacilitySummary();
