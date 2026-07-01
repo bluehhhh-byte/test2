@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>?щ궃쨌?덉쟾 ?꾪솴 寃???섏씠吏</title>
+  <title>재난·안전 현황 검색 페이지</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -13,9 +13,9 @@
   <main class="page">
     <header class="hero">
       <div>
-        <p class="eyebrow">?щ궃 諛쒖깮 ?꾪솴 쨌 ?덉쟾?쒖꽕 ?꾪솴</p>
-        <h1>?쒕????쒕늿??蹂대뒗 ?щ궃 諛??덉쟾 寃???섏씠吏</h1>
-        <p class="lead">?щ궃 諛쒖깮 移대뱶, 吏???좏삎蹂??덉쟾?쒖꽕 ?붿빟, ?꾪꽣 寃?? 理쒖떊 RSS ?붿빟?????붾㈃??紐⑥븯?듬땲??</p>
+        <p class="eyebrow">재난 발생 현황 · 안전시설 현황</p>
+        <h1>시민이 한눈에 보는 재난 및 안전 검색 페이지</h1>
+        <p class="lead">재난 발생 카드, 지역·유형별 안전시설 요약, 필터 검색, 최신 RSS 요약을 한 화면에 모았습니다.</p>
         <section class="rss-hero panel" aria-label="RSS 요약">
           <div class="section-head">
             <div>
@@ -28,23 +28,23 @@
         </section>
       </div>
       <div class="hero-metrics">
-        <div class="metric"><span>?щ궃 ?ш굔</span><strong id="totalReports">0</strong></div>
-        <div class="metric"><span>?덉쟾?쒖꽕</span><strong id="totalFacilities">0</strong></div>
-        <div class="metric"><span>?쒖떆 寃곌낵</span><strong id="resultCount">0嫄?/strong></div>
+        <div class="metric"><span>재난 사건</span><strong id="totalReports">0</strong></div>
+        <div class="metric"><span>안전시설</span><strong id="totalFacilities">0</strong></div>
+        <div class="metric"><span>표시 결과</span><strong id="resultCount">0건</strong></div>
       </div>
     </header>
 
-    <section class="panel controls" aria-label="寃???꾪꽣">
+    <section class="panel controls" aria-label="검색 필터">
       <div class="field">
-        <label for="typeFilter">?щ궃?좏삎</label>
+        <label for="typeFilter">재난유형</label>
         <select id="typeFilter"></select>
       </div>
       <div class="field">
-        <label for="regionFilter">諛쒖깮吏??/label>
+        <label for="regionFilter">발생지역</label>
         <select id="regionFilter"></select>
       </div>
       <div class="field">
-        <button id="resetButton" type="button">?꾪꽣 珥덇린??/button>
+        <button id="resetButton" type="button">필터 초기화</button>
       </div>
     </section>
 
@@ -52,10 +52,10 @@
       <section class="panel main-panel">
         <div class="section-head">
           <div>
-            <h2>?щ궃 諛쒖깮 移대뱶</h2>
-            <p>諛쒖깮?쇱옄, ?щ궃?좏삎, 諛쒖깮吏?? ?쇳빐湲덉븸??移대뱶濡??뺤씤?⑸땲??</p>
+            <h2>재난 발생 카드</h2>
+            <p>발생일자, 재난유형, 발생지역, 피해금액을 카드로 확인합니다.</p>
           </div>
-          <div class="chip" id="summaryChip">?꾩껜 0嫄?/div>
+          <div class="chip" id="summaryChip">전체 0건</div>
         </div>
         <div id="cards" class="cards"></div>
       </section>
@@ -63,12 +63,12 @@
       <aside class="side-column">
         <section class="panel">
           <div class="section-head">
-            <h2>?덉쟾?쒖꽕 ?붿빟</h2>
-            <p>吏??퀎 ?먮뒗 ?쒖꽕?좏삎蹂??꾪솴</p>
+            <h2>안전시설 요약</h2>
+            <p>지역별 또는 시설유형별 현황</p>
           </div>
-          <div class="toggle-group" role="tablist" aria-label="?덉쟾?쒖꽕 ?붿빟 湲곗?">
-            <button class="toggle active" data-summary="region" type="button">吏??퀎</button>
-            <button class="toggle" data-summary="facility" type="button">?쒖꽕?좏삎蹂?/button>
+          <div class="toggle-group" role="tablist" aria-label="안전시설 요약 기준">
+            <button class="toggle active" data-summary="region" type="button">지역별</button>
+            <button class="toggle" data-summary="facility" type="button">시설유형별</button>
           </div>
           <div id="facilitySummary" class="summary-list"></div>
         </section>
@@ -76,17 +76,17 @@
         <section class="panel">
           <div class="section-head">
             <h2>korea.kr RSS</h2>
-            <p>理쒖떊 ??ぉ 5嫄??댁긽 ?쒖떆</p>
+            <p>최신 항목 5건 이상 표시</p>
           </div>
-          <p class="rss-note"><a href="https://www.korea.kr/rss/dept_mois.xml" target="_blank" rel="noreferrer">?됱젙?덉쟾遺 蹂대룄?먮즺 RSS</a>瑜??꾨쿋?쒗빀?덈떎.</p>
-          <div id="rssStatus" class="muted">RSS瑜?遺덈윭?ㅻ뒗 以?..</div>
+          <p class="rss-note"><a href="https://www.korea.kr/rss/dept_mois.xml" target="_blank" rel="noreferrer">행정안전부 보도자료 RSS</a>를 임베드합니다.</p>
+          <div id="rssStatus" class="muted">RSS를 불러오는 중...</div>
           <ul id="rssList" class="rss-list"></ul>
         </section>
       </aside>
     </section>
 
     <footer class="footer">
-      <p>寃??湲곗?? ?щ궃?좏삎怨?諛쒖깮吏??씠硫? ?덉쟾?쒖꽕? 吏??퀎쨌?쒖꽕?좏삎蹂꾨줈 ?④퍡 ?붿빟?⑸땲??</p>
+      <p>검색 기준은 재난유형과 발생지역이며, 안전시설은 지역별·시설유형별로 함께 요약됩니다.</p>
     </footer>
   </main>
 
