@@ -159,3 +159,23 @@ button:hover, select:focus-visible { border-color: rgba(17,94,89,.38); box-shado
   .section-head { display: grid; }
   .toggle-group { grid-template-columns: 1fr; }
 }
+.metric {
+  position: relative;
+  overflow: hidden;
+}
+.metric::after {
+  content: "";
+  position: absolute;
+  inset: auto -10px -18px auto;
+  width: 78%;
+  aspect-ratio: 1.9;
+  background: var(--metric-bg) center / contain no-repeat;
+  opacity: .42;
+  pointer-events: none;
+}
+.metric > * { position: relative; z-index: 1; }
+.metric-primary { --metric-bg: url("./assets/metric-disaster.svg"); }
+.hero-metrics .metric:nth-child(2) { --metric-bg: url("./assets/metric-facility.svg"); }
+.metric-accent { --metric-bg: url("./assets/metric-results.svg"); }
+.rss-more { margin-top: 2px; background: #fff7ed; color: var(--warn); border-color: rgba(180,83,9,.25); }
+.rss-more:hover { border-color: rgba(180,83,9,.4); box-shadow: 0 0 0 4px rgba(180,83,9,.10); }

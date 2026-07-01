@@ -3,7 +3,8 @@ const nf = new Intl.NumberFormat('ko-KR');
 const data = window.__DATA__ || { disasters: [], facilities: [] };
 const rssFeedUrl = 'https://www.korea.kr/rss/dept_mois.xml';
 const PAGE_SIZE = 50;
-const state = { type: '', region: '', summary: 'region', visible: PAGE_SIZE };
+const RSS_PAGE_SIZE = 10;
+const state = { type: '', region: '', summary: 'region', visible: PAGE_SIZE, rssVisible: RSS_PAGE_SIZE, rssItems: [] };
 
 function fmt(v) {
   if (v === null || v === undefined || v === '') return '-';
@@ -98,32 +99,56 @@ function renderFacilitySummary() {
   `).join('') || '<div class="muted">선택한 지역의 안전시설 정보가 없습니다.</div>';
 }
 
+function formatRssDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + 1;
+  const day = date.getUTCDate();
+  const weekday = weekdays[date.getUTCDay()];
+  const hour = date.getUTCHours();
+  const minute = date.getUTCMinutes();
+  const period = hour < 12 ? '오전' : '오후';
+  const hour12 = hour % 12 || 12;
+  const minuteText = minute ? ` ${minute}분` : '';
+  return `${year}년 ${month}월 ${day}일(${weekday}) ${period} ${hour12}시${minuteText}`;
+}
 function renderRss(items, statusText) {
+  state.rssItems = items;
+  const heroItems = items.slice(0, 5);
+  const listItems = items.slice(0, state.rssVisible);
   el('rssHeroStatus').textContent = statusText;
-  el('rssHeroList').innerHTML = items.map((item) => `<li><a href="${item.link}" target="_blank" rel="noreferrer">${item.title}</a><div><time>${item.date || ''}</time></div></li>`).join('');
-  el('rssStatus').textContent = statusText;
-  el('rssList').innerHTML = items.map((item) => `<li><a href="${item.link}" target="_blank" rel="noreferrer">${item.title}</a><div><time>${item.date || ''}</time></div><p>${item.desc || ''}</p></li>`).join('');
+  el('rssHeroList').innerHTML = heroItems.map((item) => `<li><a href="${item.link}" target="_blank" rel="noreferrer">${item.title}</a><div><time>${formatRssDate(item.date)}</time></div></li>`).join('');
+  el('rssStatus').textContent = `실시간 ${Math.min(state.rssVisible, items.length)} / ${items.length}건`;
+  el('rssList').innerHTML = listItems.map((item) => `<li><a href="${item.link}" target="_blank" rel="noreferrer">${item.title}</a><div><time>${formatRssDate(item.date)}</time></div><p>${item.desc || ''}</p></li>`).join('');
+
+  const rssMore = el('rssMoreButton');
+  const remaining = items.length - listItems.length;
+  rssMore.hidden = remaining <= 0;
+  rssMore.textContent = remaining > 0 ? `계속보기 (${fmt(remaining)}건 남음)` : '계속보기';
 }
 
 async function loadRss() {
   try {
     if (Array.isArray(window.__RSS_ITEMS__) && window.__RSS_ITEMS__.length >= 5) {
-      const items = window.__RSS_ITEMS__.slice(0, 5);
-      renderRss(items, `실시간 ${items.length}건`);
+      const items = window.__RSS_ITEMS__;
+      renderRss(items, `실시간 ${Math.min(5, items.length)}건`);
       return;
     }
     const res = await fetch(rssFeedUrl);
     const text = await res.text();
     const doc = new DOMParser().parseFromString(text, 'text/xml');
-    const items = [...doc.querySelectorAll('item')].slice(0, 5).map((item) => ({
+    const items = [...doc.querySelectorAll('item')].slice(0, 20).map((item) => ({
       title: item.querySelector('title')?.textContent || '',
       link: item.querySelector('link')?.textContent || '#',
       date: item.querySelector('pubDate')?.textContent || '',
       desc: (item.querySelector('description')?.textContent || '').replace(/<[^>]+>/g, '')
     }));
-    renderRss(items, `실시간 ${items.length}건`);
+    renderRss(items, `실시간 ${Math.min(5, items.length)}건`);
   } catch (err) {
-    const items = (window.__RSS_ITEMS__ || []).slice(0, 5);
+    const items = window.__RSS_ITEMS__ || [];
     renderRss(items, '보조 목록 표시');
   }
 }
@@ -158,6 +183,10 @@ function bindEvents() {
     state.visible += PAGE_SIZE;
     renderDisasters();
   });
+  el('rssMoreButton').addEventListener('click', () => {
+    state.rssVisible += RSS_PAGE_SIZE;
+    renderRss(state.rssItems, `실시간 ${Math.min(5, state.rssItems.length)}건`);
+  });
   document.querySelectorAll('.toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.toggle').forEach((b) => b.classList.remove('active'));
@@ -177,3 +206,4 @@ async function boot() {
 }
 
 boot();
+
