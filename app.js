@@ -5,6 +5,17 @@ const rssFeedUrl = 'https://www.korea.kr/rss/dept_mois.xml';
 const PAGE_SIZE = 50;
 const RSS_PAGE_SIZE = 10;
 const state = { type: '', region: '', summary: 'region', visible: PAGE_SIZE, rssVisible: RSS_PAGE_SIZE, rssItems: [] };
+const typePalette = [
+  { bg: '#e0f2fe', fg: '#075985', line: '#38bdf8' },
+  { bg: '#dcfce7', fg: '#166534', line: '#22c55e' },
+  { bg: '#fef3c7', fg: '#92400e', line: '#f59e0b' },
+  { bg: '#fee2e2', fg: '#991b1b', line: '#ef4444' },
+  { bg: '#ede9fe', fg: '#5b21b6', line: '#8b5cf6' },
+  { bg: '#fce7f3', fg: '#9d174d', line: '#ec4899' },
+  { bg: '#ccfbf1', fg: '#115e59', line: '#14b8a6' },
+  { bg: '#e5e7eb', fg: '#374151', line: '#6b7280' }
+];
+let disasterTypes = [];
 
 function fmt(v) {
   if (v === null || v === undefined || v === '') return '-';
@@ -20,26 +31,33 @@ function optionHTML(label, value = '') {
   return `<option value="${value}">${label}</option>`;
 }
 
+function typeStyle(type) {
+  const idx = Math.max(0, disasterTypes.indexOf(type));
+  const color = typePalette[idx % typePalette.length];
+  return `--type-bg:${color.bg};--type-fg:${color.fg};--type-line:${color.line}`;
+}
+
 function renderFilters() {
-  const types = unique(data.disasters.map((d) => d['재난유형']));
+  disasterTypes = unique(data.disasters.map((d) => d['재난유형']));
   const regions = unique(data.disasters.map((d) => d['발생지역']));
-  el('typeFilter').innerHTML = optionHTML('재난유형 전체') + types.map((v) => optionHTML(v, v)).join('');
+  el('typeFilter').innerHTML = optionHTML('재난유형 전체') + disasterTypes.map((v) => optionHTML(v, v)).join('');
   el('regionFilter').innerHTML = optionHTML('발생지역 전체') + regions.map((v) => optionHTML(v, v)).join('');
 }
 
 function card(row) {
+  const casualty = row['인명피해여부'] === 'Y';
   return `
-    <article class="card">
+    <article class="card ${casualty ? 'casualty-card' : ''}" style="${typeStyle(row['재난유형'])}">
       <div class="card-top">
         <div class="card-id">${row['사건ID']}</div>
-        <div class="pill">${row['재난유형']}</div>
+        <div class="pill type-pill">${row['재난유형']}</div>
       </div>
       <div class="meta">
         <div><span>발생일자</span>${row['발생일자']}</div>
         <div><span>발생지역</span>${row['발생지역']}</div>
         <div><span>피해금액</span>${fmt(row['피해금액_만원'])}만원</div>
       </div>
-      <div class="card-footer">규모등급 ${fmt(row['규모등급'])} · 인명피해 ${row['인명피해여부'] === 'Y' ? '있음' : '없음'} · 복구 ${fmt(row['복구기간_일'])}일</div>
+      <div class="card-footer">규모등급 ${fmt(row['규모등급'])} · <span class="casualty ${casualty ? 'danger' : ''}">인명피해 ${casualty ? '있음' : '없음'}</span> · 복구 ${fmt(row['복구기간_일'])}일</div>
     </article>`;
 }
 
@@ -47,8 +65,19 @@ function filteredDisasters() {
   return data.disasters.filter((d) => (!state.type || d['재난유형'] === state.type) && (!state.region || d['발생지역'] === state.region));
 }
 
+function summaryDisasters() {
+  return filteredDisasters();
+}
+
+function facilityRowsForSummary() {
+  const disasters = summaryDisasters();
+  const regions = new Set(disasters.map((d) => d['발생지역']).filter(Boolean));
+  if (!state.type && !state.region) return data.facilities;
+  return data.facilities.filter((f) => regions.has(f['지역']));
+}
+
 function filteredFacilities() {
-  return data.facilities.filter((f) => !state.region || f['지역'] === state.region);
+  return facilityRowsForSummary();
 }
 
 function meterWidth(count, total) {
@@ -80,23 +109,49 @@ function renderDisasters() {
 }
 
 function renderFacilitySummary() {
-  const rows = filteredFacilities();
+  const facilities = facilityRowsForSummary();
+  const disasters = summaryDisasters();
+  const disasterCountByRegion = new Map();
+  disasters.forEach((row) => {
+    const region = row['발생지역'] || '-';
+    disasterCountByRegion.set(region, (disasterCountByRegion.get(region) || 0) + 1);
+  });
+
   const key = state.summary === 'facility' ? '시설유형' : '지역';
   const map = new Map();
-  rows.forEach((row) => {
+  facilities.forEach((row) => {
     const k = row[key] || '-';
-    const bucket = map.get(k) || { count: 0, capacity: 0 };
+    const bucket = map.get(k) || { count: 0, capacity: 0, disasterCount: 0 };
     bucket.count += 1;
     bucket.capacity += Number(row['수용인원'] || 0);
+    if (key === '지역') bucket.disasterCount = disasterCountByRegion.get(k) || 0;
     map.set(k, bucket);
   });
-  const items = [...map.entries()].sort((a, b) => b[1].count - a[1].count || String(a[0]).localeCompare(String(b[0]), 'ko'));
-  el('facilitySummary').innerHTML = items.map(([name, v]) => `
-    <div class="summary-item">
-      <strong>${name}</strong>
-      <span>${v.count}개 시설 · 수용인원 합계 ${fmt(v.capacity)}명</span>
+
+  const items = [...map.entries()].sort((a, b) => b[1].count - a[1].count || b[1].capacity - a[1].capacity || String(a[0]).localeCompare(String(b[0]), 'ko'));
+  const maxCount = Math.max(...items.map(([, v]) => v.count), 1);
+  const label = state.summary === 'facility' ? '시설유형' : '지역';
+  const disasterHeader = state.summary === 'facility' ? '' : '<th>관련 재난</th>';
+  const rows = items.map(([name, v], index) => `
+    <tr>
+      <td class="rank">${index + 1}</td>
+      <td class="summary-name">${name}</td>
+      <td>
+        <div class="bar-cell"><span style="width:${meterWidth(v.count, maxCount)}"></span><strong>${fmt(v.count)}개</strong></div>
+      </td>
+      <td>${fmt(v.capacity)}명</td>
+      ${state.summary === 'facility' ? '' : `<td>${fmt(v.disasterCount)}건</td>`}
+    </tr>
+  `).join('');
+
+  el('facilitySummary').innerHTML = items.length ? `
+    <div class="summary-table-wrap">
+      <table class="summary-table">
+        <thead><tr><th>순위</th><th>${label}</th><th>시설 수</th><th>수용인원</th>${disasterHeader}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>
-  `).join('') || '<div class="muted">선택한 지역의 안전시설 정보가 없습니다.</div>';
+  ` : '<div class="muted">선택한 조건과 연결된 안전시설 정보가 없습니다.</div>';
 }
 
 function formatRssDate(value) {
@@ -115,6 +170,7 @@ function formatRssDate(value) {
   const minuteText = minute ? ` ${minute}분` : '';
   return `${year}년 ${month}월 ${day}일(${weekday}) ${period} ${hour12}시${minuteText}`;
 }
+
 function renderRss(items, statusText) {
   state.rssItems = items;
   const heroItems = items.slice(0, 5);
@@ -206,4 +262,3 @@ async function boot() {
 }
 
 boot();
-

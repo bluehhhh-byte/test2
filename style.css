@@ -179,3 +179,84 @@ button:hover, select:focus-visible { border-color: rgba(17,94,89,.38); box-shado
 .metric-accent { --metric-bg: url("./assets/metric-results.svg"); }
 .rss-more { margin-top: 2px; background: #fff7ed; color: var(--warn); border-color: rgba(180,83,9,.25); }
 .rss-more:hover { border-color: rgba(180,83,9,.4); box-shadow: 0 0 0 4px rgba(180,83,9,.10); }
+.card {
+  border-left: 4px solid var(--type-line, var(--line));
+}
+.type-pill {
+  background: var(--type-bg, rgba(29,78,216,.10));
+  color: var(--type-fg, var(--accent2));
+}
+.casualty.danger {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 900;
+}
+.casualty-card {
+  background: linear-gradient(180deg, #fff, #fff7f7);
+  border-color: rgba(185,28,28,.22);
+}
+.summary-list { display: block; }
+.summary-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.96);
+}
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+  font-size: .9rem;
+}
+.summary-table th,
+.summary-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.summary-table th {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+  background: rgba(248,250,252,.9);
+}
+.summary-table tr:last-child td { border-bottom: 0; }
+.summary-table .rank {
+  width: 44px;
+  color: var(--accent);
+  font-weight: 900;
+}
+.summary-name { font-weight: 900; }
+.bar-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 130px;
+  height: 28px;
+  padding-left: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15,23,42,.06);
+}
+.bar-cell span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(17,94,89,.28), rgba(29,78,216,.24));
+}
+.bar-cell strong {
+  position: relative;
+  z-index: 1;
+  font-weight: 900;
+}
+@media (max-width: 640px) {
+  .summary-table { min-width: 460px; }
+  .summary-table th,
+  .summary-table td { padding: 9px 10px; }
+}
