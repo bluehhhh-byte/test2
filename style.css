@@ -137,3 +137,24 @@ button:hover, select:focus-visible { border-color: rgba(15,118,110,.45); box-sha
   .summary-table { min-width: 460px; }
   .summary-table th, .summary-table td { padding: 9px 10px; }
 }
+.rss-source-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: var(--text);
+  font-size: .84rem;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.rss-source-button:hover {
+  color: var(--accent);
+  border-color: rgba(15,118,110,.35);
+  background: #f0fdfa;
+  box-shadow: 0 0 0 4px rgba(15,118,110,.08);
+}
